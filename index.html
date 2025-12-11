@@ -1,170 +1,27 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Holiday E-card — 2025</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>E-Card Xmas 2025</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="h1">Holiday E-card — 2025</div>
-      <div class="subtitle">Type your name below and get your personalized Christmas & New Year card 🎄</div>
+
+<div class="snow"></div>
+
+<div class="container">
+    <img src="https://i.imgur.com/zY5T9yP.png" class="xmas-icon">
+    <h2 class="title">Merry Christmas & Happy New Year 2025</h2>
+
+    <input type="text" id="nameInput" placeholder="Nhập họ tên của bạn...">
+    <button onclick="loadData()">Xem thiệp</button>
+
+    <div id="ecard" class="ecard hidden">
+        <img src="https://i.imgur.com/PfFjI7c.png" class="ecard-img">
+        <p id="message"></p>
     </div>
+</div>
 
-    <div class="search-wrap">
-      <div class="search">
-        <input id="q" type="search" placeholder="Type full name or part of it, e.g. 'Nguyễn'..." aria-label="Search employee name" />
-        <button id="btnSearch">Find</button>
-      </div>
-    </div>
-
-    <div id="suggest" class="suggestions" style="display:none"></div>
-
-    <div id="ecardArea" class="ecard-wrap" aria-live="polite"></div>
-  </div>
-
-<script>
-/* Simple client-side app: load data.json, search, render e-card, URL hash linking */
-let employees = [];
-
-async function loadData(){
-  try{
-    const res = await fetch('data.json');
-    employees = await res.json();
-    // normalize for search
-    employees = employees.map(e => ({...e, name_norm: e.name.toLowerCase()}));
-    // check hash
-    handleHash();
-  }catch(err){
-    console.error(err);
-    document.getElementById('ecardArea').innerHTML = '<div style="color:#b00">Cannot load data.json. Make sure the file exists and is served.</div>';
-  }
-}
-
-function showSuggestions(list){
-  const s = document.getElementById('suggest');
-  if(!list || list.length===0){ s.style.display='none'; s.innerHTML=''; return; }
-  s.style.display='block';
-  s.innerHTML = list.slice(0,8).map(it => `<div class="item" data-slug="${it.slug}">${escapeHtml(it.name)} — ${it.hours} hrs</div>`).join('');
-  // attach listeners
-  Array.from(s.children).forEach(node=>{
-    node.addEventListener('click', ()=> {
-      const slug = node.dataset.slug;
-      openCardBySlug(slug);
-      s.style.display='none';
-    });
-  });
-}
-
-function escapeHtml(text){ return String(text).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-function searchQuery(q){
-  if(!q || q.trim()==='') { showSuggestions([]); return; }
-  const qq = q.trim().toLowerCase();
-  // partial match on name
-  const filtered = employees.filter(e => e.name_norm.includes(qq));
-  showSuggestions(filtered);
-  return filtered;
-}
-
-function renderCard(emp){
-  const area = document.getElementById('ecardArea');
-  if(!emp){
-    area.innerHTML = '';
-    return;
-  }
-  const html = `
-    <div class="ecard" role="article" aria-label="E-card for ${escapeHtml(emp.name)}">
-      <div class="top">
-        <div class="logo">🎁</div>
-        <div>
-          <h2 class="title">Merry Christmas and Happy New Year!</h2>
-          <div style="color:#555;font-size:0.95rem;margin-top:4px">A small token of thanks for your time in 2025</div>
-        </div>
-      </div>
-
-      <div class="body-text">
-        <p>Thank you, <span class="highlight">${escapeHtml(emp.name)}</span>, for contributing <span class="highlight">${escapeHtml(emp.hours)}</span> hours with the company in 2025. Wishing you and your family a joyful and warm holiday season!</p>
-      </div>
-
-      <div class="actions">
-        <button class="btn btn-copy" id="copyBtn">Copy message</button>
-        <button class="btn btn-reset" id="resetBtn">Search again</button>
-        <button class="btn" id="shareBtn">Get shareable link</button>
-      </div>
-
-      <div class="decor">❄️</div>
-    </div>
-  `;
-  area.innerHTML = html;
-
-  document.getElementById('copyBtn').addEventListener('click', ()=>{
-    const text = `Thank you, ${emp.name}, for contributing ${emp.hours} hours with the company in 2025. Wishing you and your family a joyful and warm holiday season!`;
-    navigator.clipboard?.writeText(text).then(()=> alert('Message copied to clipboard'), ()=> alert('Copy failed'));
-  });
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
-    document.getElementById('q').value = '';
-    renderCard(null);
-    document.getElementById('q').focus();
-    history.replaceState(null,'',location.pathname);
-  });
-  document.getElementById('shareBtn').addEventListener('click', ()=>{
-    const link = location.origin + location.pathname + '#u=' + encodeURIComponent(emp.slug || emp.name.replace(/\s+/g,'-').toLowerCase());
-    prompt('Shareable link (copy):', link);
-  });
-}
-
-function openCardBySlug(slug){
-  const emp = employees.find(e => e.slug === slug);
-  if(emp){
-    renderCard(emp);
-    // update hash for share
-    history.replaceState(null,'', location.pathname + '#u=' + encodeURIComponent(slug));
-  }else{
-    alert('No employee found for ' + slug);
-  }
-}
-
-function handleHash(){
-  const h = location.hash || '';
-  if(h.startsWith('#u=')){
-    const slug = decodeURIComponent(h.slice(3));
-    openCardBySlug(slug);
-  }
-}
-
-// events
-document.getElementById('q').addEventListener('input', (e)=>{
-  searchQuery(e.target.value);
-});
-document.getElementById('btnSearch').addEventListener('click', ()=>{
-  const q = document.getElementById('q').value.trim();
-  const list = searchQuery(q);
-  if(list && list.length>0){
-    // open first exact or best match
-    // prefer exact name match
-    const exact = list.find(x => x.name_norm === q.toLowerCase());
-    const pick = exact || list[0];
-    openCardBySlug(pick.slug);
-    showSuggestions([]);
-  }else{
-    alert('No employee found. Try partial name or check spelling.');
-  }
-});
-
-// support Enter key
-document.getElementById('q').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){
-    e.preventDefault();
-    document.getElementById('btnSearch').click();
-  }
-});
-
-// load on start
-loadData();
-</script>
+<script src="script.js"></script>
 </body>
 </html>
